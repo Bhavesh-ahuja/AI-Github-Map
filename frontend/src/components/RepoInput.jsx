@@ -13,7 +13,7 @@ const RepoInput = ({ onSubmit }) => {
     setError('');
 
     // Basic Validation
-    if (!url.includes('[github.com/](https://github.com)')) {
+    if (!url.includes('github.com/')) {
       setError('Please enter a valid GitHub repository URL');
       return;
     }
