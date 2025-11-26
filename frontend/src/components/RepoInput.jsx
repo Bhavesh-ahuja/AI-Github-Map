@@ -22,10 +22,9 @@ const RepoInput = ({ onSubmit }) => {
     setLoading(true);
 
     // Simulate a delay
-    setTimeout(() => {
-      setLoading(false);
-      onSubmit(url);  //Send data back to App parent
-    }, 2000);
+    onSubmit(url);
+    setTimeout(() => setLoading(false), 1000);
+
   };
 
   return (
@@ -34,11 +33,11 @@ const RepoInput = ({ onSubmit }) => {
 
         {/* The Input Box */}
         <div className='relative group'>
-          <div className='absoulte inset-y-0 left-0 pl-4 flex items-center pointer-event-none'>
+          <div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-event-none'>
             <Search className={`h-5 w-5 ${error ? 'text-red-400' : 'text-slate-400'}`} />
           </div>
           <input type='text' value={url} onChange={(e) => setUrl(e.target.value)}
-            placeholder="[https://github.com/username/repository](https://github.com/username/repository)"
+            placeholder="https://github.com/username/repository"
             className={`block w-full pl-11 pr-32 py-4 bg-white border-2 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 transition-all
                     ${error
                 ? 'border-red-300 focus:border-red-500 focus:ring-red-100'
@@ -68,9 +67,9 @@ const RepoInput = ({ onSubmit }) => {
 
       {/* Helper Text */}
       <p className='mt-4 text-center text-slate-500 text-sm'>
-        Try public repositories like 
+        Try public repositories like
         <span className='text-blue-600 font-mono bg-blue-50 px-1 rounded'>
-          facebook/react
+          facebook/react 
         </span>
         or
         <span className='text-blue-600 font-mono bg-blue-50 px-1 rounded'>
