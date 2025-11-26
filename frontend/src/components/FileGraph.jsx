@@ -1,9 +1,14 @@
 import React, { useMemo } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
+import cytoscape from 'cytoscape';
+import dagre from 'cytoscape-dagre';
+
+// 1. REGISTER THE LAYOUT
+cytoscape.use(dagre);
 
 const FileGraph = ({ fileList }) => {
   
-  // 1. TRANSFORM DATA: Convert paths into Nodes & Edges
+  // 2. TRANSFORM DATA
   const elements = useMemo(() => {
     const nodes = [];
     const edges = [];
@@ -12,6 +17,7 @@ const FileGraph = ({ fileList }) => {
     if (!fileList || fileList.length === 0) return [];
 
     fileList.forEach((file) => {
+      // Fix Windows paths just in case
       const normalizedPath = file.path.replace(/\\/g, '/');
       const parts = normalizedPath.split('/');
       let parentPath = "";
@@ -44,23 +50,19 @@ const FileGraph = ({ fileList }) => {
     return [...nodes, ...edges];
   }, [fileList]);
 
-  // 2. LAYOUT CONFIGURATION
+  // 3. HIERARCHICAL LAYOUT CONFIG (The "GitDiagram" Look)
   const layout = {
-    name: 'cose',
-    idealEdgeLength: 100,
-    nodeOverlap: 20,
-    refresh: 20,
-    fit: true,
+    name: 'dagre',
+    rankDir: 'LR',      // 'LR' = Left-to-Right. Change to 'TB' for Top-to-Bottom.
+    ranker: 'network-simplex',
+    spacingFactor: 1.2, // Spread things out a bit
+    nodeDimensionsIncludeLabels: true, // Calculate space for text
+    animate: true,
+    animationDuration: 500,
     padding: 30,
-    randomize: true, // CRITICAL FIX: Starts nodes at random positions so they can spread out
-    componentSpacing: 100,
-    nodeRepulsion: 400000,
-    edgeElasticity: 100,
-    nestingFactor: 5,
-    animate: false 
   };
 
-  // 3. STYLE
+  // 4. STYLE
   const stylesheet = [
     {
       selector: 'node',
@@ -68,38 +70,49 @@ const FileGraph = ({ fileList }) => {
         'label': 'data(label)',
         'text-valign': 'bottom',
         'text-halign': 'center',
-        'font-size': '10px',
-        'color': '#475569',
-        'background-color': '#3b82f6',
-        'width': 10,
-        'height': 10
+        'font-size': '11px',
+        'color': '#334155', // slate-700
+        'background-color': '#3b82f6', // blue-500
+        'width': 12,
+        'height': 12,
+        'text-margin-y': 4
       }
     },
     {
       selector: 'node[type="folder"]',
       style: {
-        'background-color': '#f59e0b',
-        'width': 15,
-        'height': 15
+        'background-color': '#fbbf24', // amber-400
+        'shape': 'round-rectangle',
+        'width': 16,
+        'height': 16,
+        'border-width': 0
       }
     },
     {
       selector: 'edge',
       style: {
-        'width': 1,
-        'line-color': '#cbd5e1',
-        'curve-style': 'bezier'
+        'width': 1.5,
+        'line-color': '#cbd5e1', // slate-300
+        'curve-style': 'taxi',   // 'taxi' makes right-angled lines (very neat!)
+        'taxi-direction': 'horizontal',
+        'target-arrow-shape': 'triangle',
+        'target-arrow-color': '#cbd5e1',
+        'arrow-scale': 0.8
       }
     }
   ];
 
   return (
-    <div className="w-full h-[800px] border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
+    <div className="w-full h-[800px] border border-slate-200 rounded-xl overflow-hidden bg-slate-50 shadow-sm">
       <CytoscapeComponent 
         elements={elements}
         style={{ width: '100%', height: '100%' }}
         stylesheet={stylesheet}
         layout={layout}
+        cy={(cy) => { 
+          // Center nicely on load
+          cy.on('add', () => cy.layout(layout).run());
+        }}
       />
     </div>
   );
