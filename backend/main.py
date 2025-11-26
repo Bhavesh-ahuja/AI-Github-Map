@@ -1,6 +1,12 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import os
+import shutil
+
+# Import our services
+from services.git_service import clone_repository
+from services.file_service import get_file_structure
 
 app = FastAPI()
 
@@ -22,22 +28,32 @@ class RepoRequest(BaseModel):
 def read_root():
     return {"message": "Hello from the AI Backend!"}
 
-@app.get("/api/health")
-def health_check():
-    return {"status": "healthy"}
+# @app.get("/api/health")
+# def health_check():
+#     return {"status": "healthy"}
 
 # 2. Create the Analysis Endpoint
 @app.post("/api/analyze")
 def analyze_repo(request: RepoRequest):
-    # This is where the magic will happen later
     print(f"Received request for: {request.url}")
     
     if "github.com" not in request.url:
         raise HTTPException(status_code=400, detail="Invalid GitHub URL")
 
-    # For now, just return a success message
-    return {
-        "message": "Analysis started successfully",
-        "repo_url": request.url,
-        "status": "processing"
-    }
+    try:
+        # 1 Clone the repo
+        local_path = clone_repository(request.url)
+
+        # 2 Scan the files
+        files = get_file_structure(local_path)
+
+        # 3 Retrun the result
+        return {
+            "message": "Analysis complete",
+            "repo_url": request.url,
+            "total_files": len(files),
+            "files": files   #Sending the list of files to frontend
+        }
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        raise HTTPException(status_code = 500, detail = str(e))
