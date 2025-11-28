@@ -7,7 +7,14 @@ from contextlib import asynccontextmanager
 
 # Import services
 from services.git_service import clone_repository
-from services.file_service import get_file_structure
+from services.file_service import get_file_structure, read_file_content
+from services.ai_service import summarize_code
+
+
+# --- STATE MANAGEMENT ---
+# We need to remember where the last repo was cloned so we can find files later
+# In a real app, this would be in a database. For MVP, a global variable is fine.
+CURRENT_REPO_PATH = None
 
 # --- CLEANUP LOGIC ---
 TEMP_DIR = os.path.join(os.getcwd(), "temp_repos")
@@ -50,12 +57,16 @@ app.add_middleware(
 class RepoRequest(BaseModel):
     url: str
 
+class SummaryRequest(BaseModel):
+    file_path: str
+
 @app.get("/")
 def read_root():
     return {"message": "Hello from the AI Backend!"}
 
 @app.post("/api/analyze")
 def analyze_repo(request: RepoRequest):
+    global CURRENT_REPO_PATH
     print(f"Received request for: {request.url}")
     
     if "github.com" not in request.url:
@@ -64,6 +75,7 @@ def analyze_repo(request: RepoRequest):
     try:
         # 1. Clone the Repo
         local_path = clone_repository(request.url)
+        CURRENT_REPO_PATH = local_path  #Save path for later
         
         # 2. Scan the Files
         files = get_file_structure(local_path)
@@ -76,6 +88,33 @@ def analyze_repo(request: RepoRequest):
             "files": files
         }
 
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.post("/api/summarize")
+def summarize_file_endpoint(request: SummaryRequest):
+    global CURRENT_REPO_PATH
+
+    if not CURRENT_REPO_PATH:
+        raise HTTPException(status_code=400, detail="No repository loaded. Analyze a repo first.")
+    
+    print(f"Summarizing file: {request.file_path}")
+
+    try: 
+        # 1 Read code
+        content = read_file_content(CURRENT_REPO_PATH, request.file_path)
+        
+        # 2 Generate Summary
+        summary = summarize_code(request.file_path, content)
+
+        return {
+            "file": request.file_path,
+            "summary": summary,
+            "content": content[:500] + "..."  # Send a preview of code back too
+        }
+    
     except Exception as e:
         print(f"Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
