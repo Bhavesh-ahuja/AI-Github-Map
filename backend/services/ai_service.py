@@ -10,6 +10,8 @@ api_key = os.getenv("GEMINI_API_KEY")
 if api_key:
     genai.configure(api_key = api_key)
 
+MODEL_NAME = 'models/gemini-2.5-pro'
+
 def summarize_code(file_name: str, code_content: str):
     """
     Send code to Gemini and asks for a summary.
@@ -30,7 +32,30 @@ def summarize_code(file_name: str, code_content: str):
     """
 
     try: 
-        model = genai.GenerativeModel('models/gemini-2.5-pro')
+        model = genai.GenerativeModel(MODEL_NAME)
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        return f"AI Error: {str(e)}"
+
+def chat_with_codebase(query: str, file_contents: dict):
+    if not api_key: return "Error: API key not found."
+
+    context_text = ""
+    for name, content in file_contents.items():
+        context_text += f"\n--- FILE: {name} ---\n{content}\n"
+
+    prompt = f"""
+                You are an AI developer assistant. Answer the user's question based ONLY on the provided code context below.
+                If the answer is not in the context, say "I couldn't find the relevant code in the files I checked."
+                
+                User Question: {query}
+
+                Code Context: 
+                {context_text}
+                """
+    try:
+        model = genai.GenerativeModel(MODEL_NAME)
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:

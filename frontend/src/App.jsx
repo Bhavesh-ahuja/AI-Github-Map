@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import RepoInput from './components/RepoInput';
 import FileGraph from './components/FileGraph';
 import FilePanel from './components/FilePanel';
+import ChatPanel from './components/ChatPanel';
 
 function App() {
 
@@ -108,6 +109,8 @@ function App() {
             />
           </div>
         )}
+
+        {repoData && <ChatPanel />}
 
         {/* Side Panel */}
         <FilePanel 

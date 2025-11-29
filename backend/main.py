@@ -8,7 +8,8 @@ from contextlib import asynccontextmanager
 # Import services
 from services.git_service import clone_repository
 from services.file_service import get_file_structure, read_file_content
-from services.ai_service import summarize_code
+from services.ai_service import summarize_code, chat_with_codebase
+from services.rag_service import identify_relevant_files
 
 
 # --- STATE MANAGEMENT ---
@@ -60,6 +61,9 @@ class RepoRequest(BaseModel):
 class SummaryRequest(BaseModel):
     file_path: str
 
+class ChatRequest(BaseModel):
+    question : str
+
 @app.get("/")
 def read_root():
     return {"message": "Hello from the AI Backend!"}
@@ -95,12 +99,11 @@ def analyze_repo(request: RepoRequest):
 
 @app.post("/api/summarize")
 def summarize_file_endpoint(request: SummaryRequest):
-    global CURRENT_REPO_PATH
 
     if not CURRENT_REPO_PATH:
         raise HTTPException(status_code=400, detail="No repository loaded. Analyze a repo first.")
     
-    print(f"Summarizing file: {request.file_path}")
+    # print(f"Summarizing file: {request.file_path}")
 
     try: 
         # 1 Read code
@@ -117,4 +120,37 @@ def summarize_file_endpoint(request: SummaryRequest):
     
     except Exception as e:
         print(f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.post("/api/chat")
+def chat_endpoint(request: ChatRequest):
+    if not CURRENT_REPO_PATH:
+        raise HTTPException(status_code=400, detail="No repository loaded.")
+    
+    try:
+        # 1. Get List of all files
+        all_files = get_file_structure(CURRENT_REPO_PATH)
+        
+        # 2. Ask AI: "Which files are relevant?"
+        relevant_paths = identify_relevant_files(request.question, all_files)
+        print(f"🤖 AI decided to read: {relevant_paths}")
+        
+        if not relevant_paths:
+            return {"answer": "I couldn't identify any relevant files for that question based on the file names."}
+
+        # 3. Read Content of those files
+        file_contents = {}
+        for path in relevant_paths:
+            content = read_file_content(CURRENT_REPO_PATH, path)
+            if "Error" not in content:
+                file_contents[path] = content
+        
+        # 4. Ask AI to Answer
+        answer = chat_with_codebase(request.question, file_contents)
+        
+        return {"answer": answer}
+        
+    except Exception as e:
+        print(f"Chat Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
