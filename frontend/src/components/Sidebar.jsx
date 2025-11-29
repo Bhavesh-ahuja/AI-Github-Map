@@ -14,23 +14,31 @@ const Sidebar = () => {
 
             {/* Navigation Menu */}
             <nav className='flex-1 space-y-2'>
-                <SidebarItem icon={<LayoutDashboard size={20} />} text="Dashboard" active />
-                <SidebarItem icon={<FileText size={20} />} text="Documentation" />
-                <SidebarItem icon={<Settings  size={20} />} text="Settings" />
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-600/10 text-blue-400 border border-blue-600/20 cursor-default">
+                    <LayoutDashboard size={20} />
+                    <span className="font-medium">Dashboard</span>
+                </div>
             </nav>
 
             {/* Footer Area */}
-            <div className='border-t border-slate-700 pt-4 mt-auto'>
-                <p className='text-xs text-slate-400 text-center'>
-                    v1.0.0 Alpha
-                </p>
+            <div className="border-t border-slate-800 pt-6 mt-auto">
+                <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                    <p className="text-xs text-slate-400 mb-2 font-medium">Status</p>
+                    <div className="flex items-center gap-2">
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                        <span className="text-xs font-mono text-slate-300">System Ready</span>
+                    </div>
+                </div>
             </div>
         </div>
     );
 };
 
 // A small helper component for menu items
-const SidebarItem = ( {icon, text, active } ) =>{
+const SidebarItem = ({ icon, text, active }) => {
     return (
         <div className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-colors ${active ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
             {icon}
